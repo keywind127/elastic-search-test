@@ -1,48 +1,29 @@
 from elasticsearch import Elasticsearch 
-from elasticsearch.helpers import bulk
-from typing import List, Dict, Any
+from utils import *
 
 es = Elasticsearch("http://localhost:9200")
 
 es.info().body 
 
-def create_index(es : Elasticsearch, index_name : str, mappings : dict) -> None:
+if (__name__ == "__main__"):
 
-    assert isinstance(es, Elasticsearch)
+    # mappings = {
+    #     "properties" : {
+    #         "name" : { "type" : "text", "analyzer" : "standard" },
+    #         "age" : { "type" : "integer" }
+    #     }
+    # }
 
-    assert isinstance(index_name, str) 
+    # create_index(es, index_name = "students", mappings = mappings)
 
-    assert isinstance(mappings, dict)
+    insert_document(es, index_name = "students", document = {
+        "name" : "Kevin",
+        "age" : 22
+    })
 
-    es.indices.create(index = index_name, mappings = mappings)
+    insert_document(es, index_name = "students", document = {
+        "name" : "Devin", 
+        "age" : 16
+    })
 
-def insert_document(es : Elasticsearch, index_name : str, document : dict, **kwargs) -> None:
-
-    assert isinstance(es, Elasticsearch)
-
-    assert isinstance(index_name, str) 
-
-    assert isinstance(document, dict)
-
-    es.index(index = index_name, document = document, **kwargs)
-
-def insert_documents(es : Elasticsearch, index_name : str, documents : list, **kwargs) -> None:
-
-    assert isinstance(es, Elasticsearch)
-
-    assert isinstance(index_name, str) 
-
-    assert isinstance(documents, list)
-
-    bulk(es, documents)
-
-def search_documents(es : Elasticsearch, index_name : str, query_dict : dict, **kwargs) -> Any:
-
-    assert isinstance(es, Elasticsearch)
-
-    assert isinstance(index_name, str) 
-
-    assert isinstance(query_dict, dict)
-
-    return es.search(index = index_name, query = query_dict)
-
+    print(es.search(index = "students", query = { "match_all" : {} }))
