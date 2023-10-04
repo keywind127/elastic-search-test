@@ -7,18 +7,19 @@ if (__name__ == "__main__"):
 
     # >> CONSTANTS 
 
-    COLUMN_NAMES = ( "Title", "Type", "Author", "Date", "Body", "Url", "Age", "Source" )
+    COLUMN_NAMES = ( "Title", "Type", "Author", "Date", "Body", "Url", "Age", "Source", "Language" )
 
     MAPPINGS = {
         "properties" : {
-            COLUMN_NAMES[0] : { "type" : "text", "analyzer" : "standard" },
-            COLUMN_NAMES[1] : { "type" : "text", "analyzer" : "standard" },
-            COLUMN_NAMES[2] : { "type" : "text", "analyzer" : "standard" },
-            COLUMN_NAMES[3] : { "type" : "text", "analyzer" : "standard" },
-            COLUMN_NAMES[4] : { "type" : "text", "analyzer" : "standard" },
-            COLUMN_NAMES[5] : { "type" : "text", "analyzer" : "standard" },
-            COLUMN_NAMES[6] : { "type" : "text", "analyzer" : "standard" },
-            COLUMN_NAMES[7] : { "type" : "text", "analyzer" : "standard" }
+            COLUMN_NAMES[0] : { "type" : "text", "analyzer" : "standard", "tokenizer" : "smartcn" },
+            COLUMN_NAMES[1] : { "type" : "text", "analyzer" : "keyword" },
+            COLUMN_NAMES[2] : { "type" : "text", "analyzer" : "standard", "tokenizer" : "smartcn" },
+            COLUMN_NAMES[3] : { "type" : "text", "analyzer" : "standard", "tokenizer" : "smartcn" },
+            COLUMN_NAMES[4] : { "type" : "text", "analyzer" : "standard", "tokenizer" : "smartcn" },
+            COLUMN_NAMES[5] : { "type" : "text", "analyzer" : "standard", "tokenizer" : "smartcn" },
+            COLUMN_NAMES[6] : { "type" : "text", "analyzer" : "keyword" },
+            COLUMN_NAMES[7] : { "type" : "text", "analyzer" : "keyword" },
+            COLUMN_NAMES[8] : { "type" : "text", "analyzer" : "keyword" }
         }
     }
 
@@ -50,7 +51,7 @@ if (__name__ == "__main__"):
 
     files_in_folder = list(map(lambda x : os.path.join(folder_of_interest, x), os.listdir(folder_of_interest)))
 
-    es = utils.Elasticsearch(elastic_search_uri)
+    es = utils.Elasticsearch(elastic_search_uri, request_timeout = 30)
 
     if (test == TEST_CREATE):
 
@@ -75,22 +76,34 @@ if (__name__ == "__main__"):
 
             print(f"SOURCE: [ {source} ]")
 
+            column_names = set(dataframe.columns)
+
             for row_idx, row_data in dataframe.iterrows():
 
                 sys.stdout.write(f"\rPROGRESS: [ {(row_idx + 1)/num_items*100:.2f}% ]")
 
                 document = {
-                    "Title"  : row_data["Title"],
-                    "Type"   : row_data["Type"],
-                    "Author" : row_data["Author"],
-                    "Date"   : row_data["Date"],
-                    "Body"   : row_data["Body"],
-                    "Url"    : row_data["Url"],
-                    "Age"    : row_data["Age"],
+                    "Title"  : "",
+                    "Type"   : "",
+                    "Author" : "",
+                    "Date"   : "",
+                    "Body"   : "",
+                    "Url"    : "",
+                    "Age"    : "",
                     "Source" : source
                 }
 
+                for column_name in COLUMN_NAMES:
+                    if (column_names.__contains__(column_name)):
+                        document[column_name] = row_data[column_name]
+
                 for key, val in list(document.items()):
+
+                    if ((isinstance(val, str)) and (val == "None")):
+                        val = ""
+
+                    if (isinstance(val, list)):
+                        val = "".join(val)
 
                     if (pandas.isna(val)):
                         document[key] = ""
