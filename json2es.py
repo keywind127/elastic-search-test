@@ -11,15 +11,39 @@ if (__name__ == "__main__"):
 
     MAPPINGS = {
         "properties" : {
-            COLUMN_NAMES[0] : { "type" : "text", "analyzer" : "standard", "tokenizer" : "smartcn" },
+            COLUMN_NAMES[0] : { "type" : "text", "analyzer" : "standard_chinese_analyzer" },
             COLUMN_NAMES[1] : { "type" : "text", "analyzer" : "keyword" },
-            COLUMN_NAMES[2] : { "type" : "text", "analyzer" : "standard", "tokenizer" : "smartcn" },
-            COLUMN_NAMES[3] : { "type" : "text", "analyzer" : "standard", "tokenizer" : "smartcn" },
-            COLUMN_NAMES[4] : { "type" : "text", "analyzer" : "standard", "tokenizer" : "smartcn" },
-            COLUMN_NAMES[5] : { "type" : "text", "analyzer" : "standard", "tokenizer" : "smartcn" },
+            COLUMN_NAMES[2] : { "type" : "text", "analyzer" : "standard_chinese_analyzer" },
+            COLUMN_NAMES[3] : { "type" : "text", "analyzer" : "standard_chinese_analyzer" },
+            COLUMN_NAMES[4] : { "type" : "text", "analyzer" : "standard_chinese_analyzer" },
+            COLUMN_NAMES[5] : { "type" : "text", "analyzer" : "standard_chinese_analyzer" },
             COLUMN_NAMES[6] : { "type" : "text", "analyzer" : "keyword" },
             COLUMN_NAMES[7] : { "type" : "text", "analyzer" : "keyword" },
-            COLUMN_NAMES[8] : { "type" : "text", "analyzer" : "keyword" }
+            #COLUMN_NAMES[8] : { "type" : "text", "analyzer" : "standard" }
+            COLUMN_NAMES[8] : { "type" : "nested", "properties" : {  
+                "K" : { "type" : "boolean" },
+                "P" : { "type" : "boolean" }, 
+                "T" : { "type" : "boolean" },
+                "Z" : { "type" : "boolean" }
+            }}
+        }
+    }
+
+    DEFAULT_SETTINGS = {
+        "analysis" : {
+            "analyzer" : {
+                "standard_chinese_analyzer" : {
+                    "type"     : "custom",
+                    "tokenizer": "smartcn_tokenizer",
+                    "filter"   : [ "lowercase", "stop", "smartcn_stop" ]
+                }
+            },
+            "filter" : {
+                "stop" : {
+                    "type"      : "stop",
+                    "stopwords" : "_english_"
+                }
+            }
         }
     }
 
@@ -38,11 +62,11 @@ if (__name__ == "__main__"):
 
     elastic_search_uri = "http://localhost:9200"
 
-    index_name         = "literature"
+    index_name         = "literature3"
 
-    folder_of_interest = "dataset"
+    folder_of_interest = "../tw_linguistics/database"
     
-    test = TEST_DBREAD
+    test = TEST_INSERT
 
     # << PARAMS
 
@@ -55,7 +79,7 @@ if (__name__ == "__main__"):
 
     if (test == TEST_CREATE):
 
-        utils.create_index(es, index_name = index_name, mappings = MAPPINGS)
+        utils.create_index(es, index_name = index_name, mappings = MAPPINGS, settings = DEFAULT_SETTINGS)
 
     if (test == TEST_INSERT):
 
@@ -83,19 +107,30 @@ if (__name__ == "__main__"):
                 sys.stdout.write(f"\rPROGRESS: [ {(row_idx + 1)/num_items*100:.2f}% ]")
 
                 document = {
-                    "Title"  : "",
-                    "Type"   : "",
-                    "Author" : "",
-                    "Date"   : "",
-                    "Body"   : "",
-                    "Url"    : "",
-                    "Age"    : "",
-                    "Source" : source
+                    "Title"    : "",
+                    "Type"     : "",
+                    "Author"   : "",
+                    "Date"     : "",
+                    "Body"     : "",
+                    "Url"      : "",
+                    "Age"      : "",
+                    "Source"   : source,
+                    "Language" : {
+                        "K" : False,
+                        "P" : False,
+                        "T" : False,
+                        "Z" : False
+                    }
                 }
 
                 for column_name in COLUMN_NAMES:
                     if (column_names.__contains__(column_name)):
-                        document[column_name] = row_data[column_name]
+                        if (column_name != "Language"):
+                            document[column_name] = row_data[column_name]
+                            continue
+                        for lang_code in row_data[column_name]:
+                            # iterate through "KPTZ"
+                            document[column_name][lang_code] = True
 
                 for key, val in list(document.items()):
 
